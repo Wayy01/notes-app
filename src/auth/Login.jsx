@@ -1,24 +1,70 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
 
+const REACT_APP_SUPABASE_KEY ='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1uaXpqYnBrc2x1a2lnaWRncnFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY4ODk3MjUsImV4cCI6MjA0MjQ2NTcyNX0.c868gOS3MQv4CMUsQBzeqvf4TgxkMliaMNY_dGRMvWU'
 
 function Login() {
-  const users = JSON.parse(localStorage.getItem('users')) || [];
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState(false); // State for error message
+  const [error, setError] = useState('');
+  const [session, setSession] = useState(null);
   const navigate = useNavigate();
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    const existingUser = users.find(u => u.email === email);
+  useEffect(() => {
 
-    if (existingUser && existingUser.password === password) {
-      sessionStorage.setItem('currentUser', JSON.stringify(existingUser));
-      navigate('/notes');
-      setLoginError(false);
-    } else {
-      setLoginError(true);
+      const getSession = async () => {
+            const supabaseUrl = 'https://mnizjbpkslukigidgrqg.supabase.co';
+            const supabaseKey = REACT_APP_SUPABASE_KEY;
+            const supabase = createClient(supabaseUrl, supabaseKey);
+
+
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
+      if (error) {
+        console.error('Error getting session:', error.message);
+      } else {
+          setSession(session);
+          console.log(session)
+      }
+    };
+
+    getSession();
+  }, []);
+
+    const handleSubmit = async (event) => {
+            const supabaseUrl = 'https://mnizjbpkslukigidgrqg.supabase.co';
+            const supabaseKey = REACT_APP_SUPABASE_KEY;
+            const supabase = createClient(supabaseUrl, supabaseKey);
+
+
+    event.preventDefault();
+    setError('');
+
+    if (!email || !password) {
+      setError('Please enter both email and password.');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.user) {
+        console.log('User logged in:', data.user);
+        navigate('/notes');
+      }
+    } catch (error) {
+      setError(error.message || 'An error occurred during sign up.');
     }
   };
 
@@ -59,10 +105,7 @@ function Login() {
           </div>
         </div>
 
-
-        {loginError && (
-          <span className="text-red-500 text-sm">Invalid email or password</span>
-        )}
+        {error && <span className="text-red-500 text-sm">{error}</span>}
 
         <div className="flex items-center justify-between flex-col">
           <button
