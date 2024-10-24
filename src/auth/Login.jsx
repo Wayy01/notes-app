@@ -1,8 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-const REACT_APP_SUPABASE_KEY ='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1uaXpqYnBrc2x1a2lnaWRncnFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY4ODk3MjUsImV4cCI6MjA0MjQ2NTcyNX0.c868gOS3MQv4CMUsQBzeqvf4TgxkMliaMNY_dGRMvWU'
+import { useAuth } from '../contexts/AuthContext';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -10,37 +8,24 @@ function Login() {
   const [error, setError] = useState('');
   const [session, setSession] = useState(null);
   const navigate = useNavigate();
+  const { supabase, signIn } = useAuth();
 
   useEffect(() => {
-
-      const getSession = async () => {
-            const supabaseUrl = 'https://mnizjbpkslukigidgrqg.supabase.co';
-            const supabaseKey = REACT_APP_SUPABASE_KEY;
-            const supabase = createClient(supabaseUrl, supabaseKey);
-
-
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession();
+    const getSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
 
       if (error) {
         console.error('Error getting session:', error.message);
       } else {
-          setSession(session);
-          console.log(session)
+        setSession(session);
+        console.log(session);
       }
     };
 
     getSession();
-  }, []);
+  }, [supabase.auth]);
 
-    const handleSubmit = async (event) => {
-            const supabaseUrl = 'https://mnizjbpkslukigidgrqg.supabase.co';
-            const supabaseKey = REACT_APP_SUPABASE_KEY;
-            const supabase = createClient(supabaseUrl, supabaseKey);
-
-
+  const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
 
@@ -50,10 +35,7 @@ function Login() {
     }
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error } = await signIn({ email, password });
 
       if (error) {
         throw error;
@@ -64,7 +46,7 @@ function Login() {
         navigate('/notes');
       }
     } catch (error) {
-      setError(error.message || 'An error occurred during sign up.');
+      setError(error.message || 'An error occurred during login.');
     }
   };
 

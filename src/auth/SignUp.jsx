@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 
-const REACT_APP_SUPABASE_KEY ='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1uaXpqYnBrc2x1a2lnaWRncnFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY4ODk3MjUsImV4cCI6MjA0MjQ2NTcyNX0.c868gOS3MQv4CMUsQBzeqvf4TgxkMliaMNY_dGRMvWU'
+
+const REACT_APP_SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+
 
 function SignUp() {
     const [email, setEmail] = useState('');
@@ -11,7 +14,7 @@ function SignUp() {
     const navigate = useNavigate();
 
     const handleSubmit = async (event) => {
-        const supabaseUrl = 'https://mnizjbpkslukigidgrqg.supabase.co';
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
         const supabaseKey = REACT_APP_SUPABASE_KEY;
         const supabase = createClient(supabaseUrl, supabaseKey);
         event.preventDefault();
