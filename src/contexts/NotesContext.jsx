@@ -21,7 +21,7 @@ export function NotesProvider({ children }) {
   };
 
   // Add clearActiveFolder function
-  const clearActiveFolder = () => {
+  const clearActiveFolder = () => {``
     setActiveFolder(null);
     setActiveView('all');
   };
