@@ -7,6 +7,7 @@ import { Logo } from '@/components/Logo';
 import ConfirmDialog from './ConfirmDialog';
 import SignOutDialog from './SignOutDialog';
 import UserMenu from '@/components/UserMenu';
+import { useMobileMenu } from '@/contexts/MobileMenuContext';
 
 function Navigation() {
   const { signOut, user } = useAuth();
@@ -34,6 +35,13 @@ function Navigation() {
 
   const handleLogout = async () => {
     await signOut();
+  };
+
+  const { activeMenu, setActiveMenu } = useMobileMenu();
+  const isNavOpen = activeMenu === 'nav';
+
+  const toggleNav = () => {
+    setActiveMenu(isNavOpen ? null : 'nav');
   };
 
   return (
@@ -104,11 +112,15 @@ function Navigation() {
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            animate={{
+              y: activeMenu === 'sidebar' ? -100 : 0 // Retract when sidebar is open
+            }}
+            transition={{ duration: 0.2 }}
+            onClick={toggleNav}
             className="md:hidden p-2 rounded-lg text-white/70 hover:text-white
-                     hover:bg-white/5 transition-colors border border-white/10"
+                     hover:bg-white/5 transition-all border border-white/10"
           >
-            {isMobileMenuOpen ? (
+            {isNavOpen ? (
               <FiX className="w-6 h-6" />
             ) : (
               <FiMenu className="w-6 h-6" />
@@ -119,13 +131,12 @@ function Navigation() {
 
       {/* Mobile Menu with improved styling */}
       <AnimatePresence>
-        {isMobileMenuOpen && (
+        {isNavOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden border-t border-white/10 bg-gradient-to-b
-                     from-[--bg-secondary] to-[--bg-primary]"
+            className="md:hidden border-t border-white/10 bg-black/20 backdrop-blur-xl"
           >
             <div className="px-4 py-4 space-y-4">
               {/* Mobile Navigation Items */}

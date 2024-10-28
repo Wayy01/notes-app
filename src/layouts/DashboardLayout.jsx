@@ -1,205 +1,155 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiPlus, FiFolder, FiStar, FiArchive, FiTrash2, FiEdit3, FiX, FiMenu, FiArrowLeft, FiInbox } from 'react-icons/fi';
-import { useNavigate, Outlet, useLocation } from 'react-router-dom';
+import { FiPlus, FiFolder, FiStar, FiArchive, FiTrash2, FiInbox } from 'react-icons/fi';
+import { useNavigate, useLocation } from 'react-router-dom';
 import NavItem from '@/components/NavItem';
 import NewFolderButton from '@/components/NewFolderButton';
-import FoldersList from '@/components/FoldersList'; // Update this import if needed
+import FoldersList from '@/components/FoldersList';
 import { useNotes } from '@/contexts/NotesContext';
-import { toast } from 'react-hot-toast';
 import UserMenu from '@/components/UserMenu';
-import { Link } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/contexts/AuthContext';
+import NotesGrid from '@/components/NotesGrid';
+import NotePreview from '@/components/NotePreview';
 import MobileSidebar from '@/components/MobileSidebar';
 
 const DashboardLayout = () => {
-  const [isCreatingNote, setIsCreatingNote] = useState(false);
-  const [newNoteTitle, setNewNoteTitle] = useState('');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const navigate = useNavigate();
+  const [selectedNote, setSelectedNote] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isNavOpen, setIsNavOpen] = useState(false);
   const location = useLocation();
-  const { user } = useAuth();
-  const { activeFolder, handleFolderClick } = useNotes();
-  const { notes, createNote } = useNotes();
-  const [counts, setCounts] = useState({
-    inbox: 0,
-    starred: 0,
-    archive: 0,
-    trash: 0
-  });
+  const navigate = useNavigate();
+  const { notes, folders } = useNotes();
 
-  // Calculate counts whenever notes change
+  // System folders configuration
+  const systemFolders = [
+    { id: 'inbox', icon: FiInbox, label: 'Inbox', path: '/dashboard/inbox' },
+    { id: 'favorites', icon: FiStar, label: 'Favorites', path: '/dashboard/favorites' },
+    { id: 'archive', icon: FiArchive, label: 'Archive', path: '/dashboard/archive' },
+    { id: 'trash', icon: FiTrash2, label: 'Trash', path: '/dashboard/trash' }
+  ];
+
+  const getFilter = () => {
+    const path = location.pathname;
+    if (path.includes('/inbox')) return 'inbox';
+    if (path.includes('/favorites')) return 'favorites';
+    if (path.includes('/archive')) return 'archive';
+    if (path.includes('/trash')) return 'trash';
+    if (path.includes('/folders')) return 'folder';
+    return 'all';
+  };
+
+  const filter = getFilter();
+
   useEffect(() => {
-    if (!notes) return;
-
-    const newCounts = {
-      inbox: notes.filter(note => note.status === 'active').length,
-      starred: notes.filter(note => note.is_favorite).length,
-      archive: notes.filter(note => note.status === 'archived').length,
-      trash: notes.filter(note => note.status === 'deleted').length
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
     };
 
-    setCounts(newCounts);
-  }, [notes]);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  const handleViewChange = (view) => {
-    setActiveView(view);
-    clearActiveFolder();
-    navigate('/dashboard');
-  };
+  useEffect(() => {
+    setSelectedNote(null);
+  }, [location.pathname]);
 
-  const handleCreateNote = async () => {
-    try {
-      const newNote = await createNote({
-        title: 'Untitled',
-        content: '',
-        folder_id: activeFolder,
-        is_favorite: false,
-        is_deleted: false
-      });
-
-      if (newNote) {
-        navigate(`/dashboard/notes/${newNote.id}`);
-      }
-    } catch (error) {
-      console.error('Error creating note:', error);
-      toast.error('Failed to create note');
-    }
-  };
-
-  const mainNavItems = [
-    {
-      icon: <FiFolder className="w-5 h-5" />,
-      label: 'All Notes',
-      view: 'all',
-      count: counts?.all || 0
-    },
-    {
-      icon: <FiStar className="w-5 h-5" />,
-      label: 'Favorites',
-      view: 'favorites',
-      count: counts?.favorites || 0
-    },
-    {
-      icon: <FiArchive className="w-5 h-5" />,
-      label: 'Archive',
-      view: 'archived',
-      count: counts?.archived || 0
-    },
-    {
-      icon: <FiTrash2 className="w-5 h-5" />,
-      label: 'Trash',
-      view: 'trash',
-      count: counts?.trash || 0
-    }
-  ];
-
-  const isNoteOpen = location.pathname.includes('/notes/');
-
-  // Update the systemFolders array
-  const systemFolders = [
-    { id: 'inbox', name: 'Inbox', icon: FiInbox, count: counts.inbox },
-    { id: 'favorites', name: 'Favorites', icon: FiStar, count: counts.favorites }, // Changed from 'starred'
-    { id: 'archive', name: 'Archive', icon: FiArchive, count: counts.archive },
-    { id: 'trash', name: 'Trash', icon: FiTrash2, count: counts.trash }
-  ];
-
-  const handleSystemFolderClick = (folderId) => {
-    navigate(`/dashboard/${folderId}`);
-  };
-
-  const handleFolderSelect = (folderId) => {
-    handleFolderClick(folderId);
-    navigate(`/dashboard/folders/${folderId}`);
+  // Handle sidebar opening
+  const handleSidebarOpen = () => {
+    setIsNavOpen(false); // Close navigation when sidebar opens
   };
 
   return (
-    <div className="h-screen flex overflow-hidden">
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 border-r
-                     border-white/10 bg-[--bg-secondary] shrink-0">
-        {/* User Menu */}
-        <div className="p-4 border-b border-white/10">
-          <UserMenu />
-        </div>
+    <div className="h-screen flex flex-col bg-[--bg-primary]">
+      {/* Remove the header since we'll integrate UserMenu into sidebar */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Desktop Sidebar */}
+        <aside className="w-64 border-r border-white/10 flex-shrink-0 hidden lg:flex flex-col bg-[--bg-secondary]">
+          {/* User Menu at top of sidebar */}
+          <div className="p-4 border-b border-white/10">
+            <UserMenu />
+          </div>
 
-        {/* Scrollable Navigation Area */}
-        <nav className="flex-1 overflow-y-auto">
-          <div className="space-y-6 p-4">
-            {/* New Note Button */}
-            <div>
-              <motion.button
-                onClick={handleCreateNote}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full px-4 py-2 rounded-lg bg-violet-500
-                         hover:bg-violet-600 text-white font-medium
-                         transition-colors duration-200 flex items-center
-                         justify-center gap-2"
-              >
-                <FiPlus className="w-5 h-5" />
-                New Note
-              </motion.button>
-            </div>
+          {/* New Note Button */}
+          <div className="p-4">
+            <button
+              onClick={() => navigate('/dashboard/new')}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2
+                       bg-violet-500 hover:bg-violet-600 rounded-lg transition-colors"
+            >
+              <FiPlus />
+              <span>New Note</span>
+            </button>
+          </div>
 
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto p-2">
             {/* System Folders */}
-            <div>
-              <h2 className="px-3 text-xs font-semibold text-white/40 uppercase mb-2">
-                Important
-              </h2>
-              <div className="space-y-1">
-                {systemFolders.map((folder) => {
-                  const Icon = folder.icon;
-                  return (
-                    <button
-                      key={folder.id}
-                      onClick={() => handleSystemFolderClick(folder.id)}
-                      className={`
-                        w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm
-                        ${location.pathname === `/dashboard/${folder.id}`
-                          ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
-                          : 'text-white/70 hover:text-white hover:bg-white/5 border border-transparent'
-                        }
-                        transition-all duration-200
-                      `}
-                    >
-                      <div className="flex items-center">
-                        <Icon className="w-4 h-4 mr-2" />
-                        <span>{folder.name}</span>
-                      </div>
-                      {folder.count > 0 && (
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-white/10">
-                          {folder.count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="space-y-1">
+              {systemFolders.map((folder) => (
+                <NavItem
+                  key={folder.id}
+                  icon={<folder.icon className="w-4 h-4" />}
+                  label={folder.label}
+                  active={location.pathname === folder.path}
+                  onClick={() => navigate(folder.path)}
+                  count={
+                    notes?.filter(note => {
+                      if (folder.id === 'inbox') return !note.is_deleted && !note.is_archived && !note.folder_id;
+                      if (folder.id === 'favorites') return note.is_favorite && !note.is_deleted;
+                      if (folder.id === 'archive') return note.is_archived && !note.is_deleted;
+                      if (folder.id === 'trash') return note.is_deleted;
+                      return false;
+                    }).length
+                  }
+                />
+              ))}
             </div>
 
-            {/* User Folders */}
-            <div>
-              <div className="px-3 flex items-center justify-between mb-2">
-                <h2 className="text-xs font-semibold text-white/40 uppercase">
-                  Folders
-                </h2>
+            {/* Folders Section */}
+            <div className="mt-8">
+              <div className="flex items-center justify-between px-3 mb-2">
+                <h2 className="text-sm font-medium text-white/50">Folders</h2>
                 <NewFolderButton />
               </div>
-              <FoldersList onFolderClick={handleFolderSelect} />
+              <FoldersList />
             </div>
+          </nav>
+        </aside>
+
+        {/* Mobile Sidebar */}
+        <MobileSidebar
+          onCreateNote={() => navigate('/dashboard/new')}
+          onSidebarOpen={handleSidebarOpen}
+        />
+
+        {/* Main Content */}
+        <div className={`
+          flex-1 flex ${isMobile ? 'flex-col' : 'flex-row'}
+          overflow-hidden bg-[--bg-primary]
+        `}>
+          {/* Notes Grid */}
+          <div className={`
+            ${isMobile ? 'flex-1' : 'w-1/2'}
+            overflow-y-auto
+          `}>
+            <NotesGrid
+              filter={filter}
+              onNoteSelect={setSelectedNote}
+              selectedNoteId={selectedNote?.id}
+            />
           </div>
-        </nav>
-      </aside>
 
-      {/* Mobile Sidebar */}
-      <MobileSidebar onCreateNote={handleCreateNote} />
-
-      {/* Main Content */}
-      <main className="flex-1 h-full overflow-hidden">
-        <Outlet />
-      </main>
+          {/* Note Preview */}
+          <div className={`
+            ${isMobile ? 'h-[300px] border-t' : 'w-1/2'}
+            border-white/10 flex-shrink-0
+          `}>
+            <NotePreview
+              note={selectedNote}
+              isMobile={isMobile}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
