@@ -1,7 +1,6 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-
-const defaultAvatar = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgZmlsbD0ibm9uZSI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTIiIGZpbGw9IiM4QjVDRjYiLz48cGF0aCBkPSJNMTIgMTNjMi43NjEgMCA1LTIuMjM5IDUtNXMtMi4yMzktNS01LTUtNSAyLjIzOS01IDUgMi4yMzkgNSA1IDV6bTAgMmMtMy4zMTUgMC02IDIuNjg1LTYgNnMxMiAwIDEyIDBjMC0zLjMxNS0yLjY4NS02LTYtNnoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=';
+import defaultAvatar from '@/assets/default-avatar.jpeg';
 
 const UserAvatar = ({ size = 'md' }) => {
   const { user } = useAuth();

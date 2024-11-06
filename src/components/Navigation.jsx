@@ -1,207 +1,242 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSettings, FiLogOut, FiUser, FiMenu, FiX } from 'react-icons/fi';
+import { FiMenu, FiX } from 'react-icons/fi';
 import { useAuth } from '@/contexts/AuthContext';
 import { Logo } from '@/components/Logo';
-import ConfirmDialog from './ConfirmDialog';
-import SignOutDialog from './SignOutDialog';
 import UserMenu from '@/components/UserMenu';
 import { useMobileMenu } from '@/contexts/MobileMenuContext';
 
-function Navigation() {
-  const { signOut, user } = useAuth();
+function Navigation({ landingPage, scrollToSection, sections }) {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-  const isNoteOpen = location.pathname.includes('/notes/');
-
-  const isDashboard = location.pathname.startsWith('/dashboard');
-
-  // Update navItems to keep "Dashboard" label
-  const navItems = [
-    { path: '/dashboard', label: 'Dashboard' },
-    { path: '/pricing', label: 'Pricing' },
-    { path: '/support', label: 'Support' },
-  ];
-
-  // Updated logo click handler
-  const handleLogoClick = () => {
-    navigate('/', { replace: true });
-  };
-
-  const isActive = (path) => location.pathname.startsWith(path);
-
-  const handleLogout = async () => {
-    await signOut();
-  };
-
   const { activeMenu, setActiveMenu } = useMobileMenu();
   const isNavOpen = activeMenu === 'nav';
+
+  // Add this function to check if a path is active
+  const isActive = (path) => {
+    if (landingPage && path.startsWith('#')) {
+      return false; // Sections don't have an "active" state on landing page
+    }
+    return location.pathname.startsWith(path);
+  };
 
   const toggleNav = () => {
     setActiveMenu(isNavOpen ? null : 'nav');
   };
 
+  // Update the mobile menu section to handle both regular links and section scrolling
+  const handleMobileItemClick = (item) => {
+    if (item.isSection) {
+      scrollToSection(item.path);
+    }
+    setActiveMenu(null);
+  };
+
+  // Conditional nav items based on page type
+  const navItems = landingPage && !user
+    ? sections.map(section => ({
+        path: section.id,
+        label: section.name,
+        isSection: true
+      }))
+    : [
+        { path: '/dashboard', label: 'Dashboard' },
+        { path: '/pricing', label: 'Pricing', badge: 'Beta' },
+        { path: '/support', label: 'Support' },
+      ];
+
+  const handleNavClick = (item) => {
+    if (landingPage && item.isSection) {
+      scrollToSection(item.path);
+      setActiveMenu(null);
+    }
+  };
+
   return (
-    <motion.nav
-      className={`sticky top-0 z-50 border-b border-white/10
-                bg-gradient-to-b from-[--bg-secondary] to-[--bg-secondary]/80
-                backdrop-blur-xl
-                ${isNoteOpen ? 'lg:pr-0' : ''}`}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className={`${landingPage ? 'fixed' : 'sticky'} top-0 w-full z-50
+                    border-b border-white/10
+                    bg-gradient-to-b from-[--bg-secondary] to-[--bg-secondary]/80
+                    backdrop-blur-xl`}>
+      <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <Logo />
+          <Logo onClick={() => navigate('/')} />
+
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => (
-              <motion.div
-                key={item.path}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
+              item.isSection ? (
+                <motion.button
+                  key={item.path}
+                  onClick={() => handleNavClick(item)}
+                  className="text-white/70 hover:text-white transition-colors
+                           relative group cursor-pointer"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <span className="flex items-center gap-2">
+                    {item.label}
+                    {item.badge && (
+                      <span className="px-1.5 py-0.5 text-xs bg-violet-500/20
+                                    text-violet-400 rounded-full">
+                        {item.badge}
+                      </span>
+                    )}
+                  </span>
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5
+                                 bg-gradient-to-r from-violet-400 to-fuchsia-400
+                                 group-hover:w-full transition-all duration-300" />
+                </motion.button>
+              ) : (
                 <Link
+                  key={item.path}
                   to={item.path}
-                  className={`px-4 py-2 rounded-lg transition-all duration-200
-                    ${isActive(item.path)
-                      ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
-                      : 'text-white/70 hover:text-white hover:bg-white/5 border border-transparent'
+                  className={`text-sm font-medium transition-colors duration-200
+                    flex items-center gap-2
+                    ${location.pathname.startsWith(item.path)
+                      ? 'text-white'
+                      : 'text-white/70 hover:text-white'
                     }`}
                 >
                   {item.label}
+                  {item.badge && (
+                    <span className="px-1.5 py-0.5 text-xs bg-violet-500/20
+                                  text-violet-400 rounded-full">
+                      {item.badge}
+                    </span>
+                  )}
                 </Link>
-              </motion.div>
+              )
             ))}
           </div>
 
-          {/* Desktop User Actions */}
-          <div className="hidden md:flex items-center gap-3">
-            {user ? (
-              <UserMenu />
-            ) : (
-              <>
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          {/* User Menu / Auth Buttons */}
+          <div className="flex items-center gap-4">
+            <div className="hidden md:block">
+              {user ? (
+                <UserMenu />
+              ) : (
+                <div className="flex items-center gap-4">
                   <Link
                     to="/login"
                     className="px-4 py-2 text-white/70 hover:text-white
                              transition-colors rounded-lg border border-white/10
-                             hover:border-white/20 bg-white/5"
-                  >
-                    Sign In
-                  </Link>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Link
-                    to="/signup"
-                    className="px-4 py-2 bg-gradient-to-r from-violet-600 to-violet-500
-                             hover:from-violet-500 hover:to-violet-400
-                             text-white rounded-lg transition-all duration-300
-                             shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40
-                             border border-violet-400/20"
-                  >
-                    Sign Up
-                  </Link>
-                </motion.div>
-              </>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            animate={{
-              y: activeMenu === 'sidebar' ? -100 : 0 // Retract when sidebar is open
-            }}
-            transition={{ duration: 0.2 }}
-            onClick={toggleNav}
-            className="md:hidden p-2 rounded-lg text-white/70 hover:text-white
-                     hover:bg-white/5 transition-all border border-white/10"
-          >
-            {isNavOpen ? (
-              <FiX className="w-6 h-6" />
-            ) : (
-              <FiMenu className="w-6 h-6" />
-            )}
-          </motion.button>
-        </div>
-      </div>
-
-      {/* Mobile Menu with improved styling */}
-      <AnimatePresence>
-        {isNavOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden border-t border-white/10 bg-black/20 backdrop-blur-xl"
-          >
-            <div className="px-4 py-4 space-y-4">
-              {/* Mobile Navigation Items */}
-              <div className="space-y-2">
-                {navItems.map((item) => (
-                  <motion.div
-                    key={item.path}
-                    whileHover={{ x: 4 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Link
-                      to={item.path}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`block px-4 py-2 rounded-lg transition-all duration-200
-                        ${isActive(item.path)
-                          ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
-                          : 'text-white/70 hover:text-white hover:bg-white/5 border border-transparent'
-                        }`}
-                    >
-                      {item.label}
-                    </Link>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Mobile User Actions */}
-              {user ? (
-                <div className="space-y-2 pt-2 border-t border-white/10">
-                  <UserMenu />
-                </div>
-              ) : (
-                <div className="space-y-2 pt-2 border-t border-white/10">
-                  <Link
-                    to="/login"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block px-4 py-2 text-white/70 hover:text-white
-                             hover:bg-white/5 rounded-lg transition-colors
-                             border border-white/10"
+                             hover:border-white/20"
                   >
                     Sign In
                   </Link>
                   <Link
                     to="/signup"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block px-4 py-2 bg-gradient-to-r from-violet-600
-                             to-violet-500 hover:from-violet-500 hover:to-violet-400
-                             text-white rounded-lg transition-all duration-300
-                             shadow-lg shadow-violet-500/25 border border-violet-400/20"
+                    className="px-4 py-2 bg-violet-600 hover:bg-violet-500
+                             text-white rounded-lg transition-colors"
                   >
                     Sign Up
                   </Link>
                 </div>
               )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      <SignOutDialog
-        isOpen={showLogoutDialog}
-        onClose={() => setShowLogoutDialog(false)}
-        onConfirm={handleLogout}
-      />
-    </motion.nav>
+            {/* Mobile Menu Button */}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={toggleNav}
+              className="md:hidden p-2 rounded-lg text-white/70 hover:text-white
+                       hover:bg-white/5 transition-all border border-white/10"
+            >
+              {isNavOpen ? (
+                <FiX className="w-6 h-6" />
+              ) : (
+                <FiMenu className="w-6 h-6" />
+              )}
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {isNavOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden absolute top-[64px] left-0 right-0
+                       bg-[#0A0A0F] border-b border-white/10
+                       shadow-lg shadow-black/50"
+            >
+              <div className="px-4 py-6 space-y-6 max-h-[calc(100vh-64px)] overflow-y-auto">
+                {/* Navigation Items */}
+                <div className="space-y-2">
+                  {navItems.map((item) => (
+                    item.isSection ? (
+                      <motion.button
+                        key={item.path}
+                        onClick={() => handleMobileItemClick(item)}
+                        className="block w-full text-left px-4 py-3 rounded-lg
+                                 text-white/70 hover:text-white hover:bg-violet-500/10
+                                 transition-all duration-200 font-medium"
+                      >
+                        {item.label}
+                      </motion.button>
+                    ) : (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        onClick={() => setActiveMenu(null)}
+                        className={`block px-4 py-3 rounded-lg transition-all duration-200 font-medium
+                          ${isActive(item.path)
+                            ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                            : 'text-white/70 hover:text-white hover:bg-violet-500/10'
+                          }`}
+                      >
+                        {item.label}
+                      </Link>
+                    )
+                  ))}
+                </div>
+
+                {/* Mobile Auth Section */}
+                {user ? (
+                  <div className="pt-4 border-t border-white/10">
+                    <UserMenu />
+                  </div>
+                ) : (
+                  <div className="space-y-3 pt-4 border-t border-white/10">
+                    <Link
+                      to="/login"
+                      onClick={() => setActiveMenu(null)}
+                      className="block w-full px-4 py-3 text-center text-white/70
+                               hover:text-white rounded-lg transition-colors
+                               border border-white/10 hover:border-white/20
+                               hover:bg-white/5"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      to="/signup"
+                      onClick={() => setActiveMenu(null)}
+                      className="block w-full px-4 py-3 text-center
+                               bg-violet-600 hover:bg-violet-500
+                               text-white font-medium rounded-lg
+                               transition-colors"
+                    >
+                      Sign Up
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </nav>
   );
 }
+
+Navigation.defaultProps = {
+  landingPage: false,
+  scrollToSection: () => {},
+  sections: []
+};
 
 export default Navigation;

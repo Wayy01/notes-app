@@ -1,26 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiClock, FiStar } from 'react-icons/fi';
 import { formatDistanceToNow } from 'date-fns';
-import { useNavigate, useParams } from 'react-router-dom';
 import { useNotes } from '@/contexts/NotesContext';
+import NoteContextMenu from '@/components/NoteContextMenu';
 
 const FolderLayout = () => {
   const [selectedNote, setSelectedNote] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null);
   const navigate = useNavigate();
   const { folderId } = useParams();
   const { notes, folders } = useNotes();
 
+  // Convert folderId to match the type in notes (likely UUID)
+  const currentFolderId = folderId || null;
+
   // Filter notes for the current folder
-  const folderNotes = notes.filter(note => note.folder_id === folderId);
-  const currentFolder = folders.find(f => f.id === folderId);
+  const folderNotes = useMemo(() => {
+    return notes.filter(note => {
+      // Debug log to check values
+      console.log('Note:', {
+        noteId: note.id,
+        noteFolderId: note.folder_id,
+        currentFolderId,
+        isMatch: String(note.folder_id) === String(currentFolderId)
+      });
 
-  const handleNoteClick = (note) => {
-    setSelectedNote(note);
-  };
+      return String(note.folder_id) === String(currentFolderId) &&
+             !note.is_deleted &&
+             !note.is_archived;
+    });
+  }, [notes, currentFolderId]);
 
-  const handleNoteDoubleClick = (note) => {
-    navigate(`/dashboard/notes/${note.id}`);
+  // Get current folder details
+  const currentFolder = folders.find(f => String(f.id) === String(currentFolderId));
+
+  // Clear selected note when changing folders
+  useEffect(() => {
+    setSelectedNote(null);
+  }, [currentFolderId]);
+
+  const handleContextMenu = (e, note) => {
+    e.preventDefault();
+    const { pageX, pageY } = e;
+    setContextMenu({
+      x: pageX,
+      y: pageY,
+      note
+    });
   };
 
   return (
@@ -42,39 +70,28 @@ const FolderLayout = () => {
             {folderNotes.map((note) => (
               <motion.div
                 key={note.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                onClick={() => handleNoteClick(note)}
-                onDoubleClick={() => handleNoteDoubleClick(note)}
-                whileHover={{ x: 4, scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                className={`p-3 rounded-lg cursor-pointer transition-all
-                         backdrop-blur-md shadow-lg
-                         ${selectedNote?.id === note.id
-                           ? 'bg-violet-500/20 border-violet-500 shadow-violet-500/20'
-                           : 'hover:bg-white/5 bg-white/5'}
-                         border border-transparent hover:border-white/10`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                onClick={() => setSelectedNote(note)}
+                onDoubleClick={() => navigate(`/dashboard/notes/${note.id}`)}
+                onContextMenu={(e) => handleContextMenu(e, note)}
+                className={`p-4 rounded-lg cursor-pointer
+                          ${selectedNote?.id === note.id
+                            ? 'bg-white/10'
+                            : 'bg-white/[0.02] hover:bg-white/[0.05]'}
+                          border border-white/[0.05] transition-colors`}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-medium text-white/90 truncate">
+                {/* Note content */}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-medium text-white/90">
                     {note.title || 'Untitled'}
                   </h3>
                   {note.is_favorite && (
-                    <FiStar className="w-4 h-4 text-violet-400 flex-shrink-0" />
+                    <FiStar className="w-4 h-4 text-violet-400" />
                   )}
                 </div>
-
-                <p className="text-sm text-white/50 mt-1 line-clamp-2">
-                  {note.content || 'No content'}
-                </p>
-
-                <div className="flex items-center gap-2 mt-2 text-xs text-white/40">
-                  <FiClock className="w-3 h-3" />
-                  <span>
-                    {formatDistanceToNow(new Date(note.updated_at), { addSuffix: true })}
-                  </span>
-                </div>
+                {/* ... rest of note content ... */}
               </motion.div>
             ))}
           </AnimatePresence>
@@ -104,6 +121,23 @@ const FolderLayout = () => {
           </div>
         )}
       </div>
+
+      {/* Context Menu */}
+      <AnimatePresence>
+        {contextMenu && (
+          <NoteContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            note={contextMenu.note}
+            folders={folders}
+            onClose={() => setContextMenu(null)}
+            onAction={(action, value) => {
+              handleNoteAction(contextMenu.note.id, action, value);
+              setContextMenu(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

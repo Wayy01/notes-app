@@ -5,33 +5,27 @@ import { FiPlus, FiFileText } from 'react-icons/fi';
 const EmptyNoteScreen = ({ onNewNote }) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="col-span-full flex flex-col items-center justify-center
-                 min-h-[400px] text-center p-8 rounded-xl border border-dashed
-                 border-white/10 bg-[--bg-secondary]/50"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="flex flex-col items-center justify-center h-full text-center p-8 space-y-6 bg-[#0B1221]/50 rounded-lg border border-gray-800/40"
     >
-      <div className="w-16 h-16 mb-6 rounded-full bg-violet-500/10
-                    flex items-center justify-center">
-        <FiFileText className="w-8 h-8 text-violet-400" />
-      </div>
+      <FiFileText className="w-16 h-16 text-violet-500/70" />
 
-      <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-violet-400
-                   to-fuchsia-400 bg-clip-text text-transparent">
-        No Notes Yet
+      <h2 className="text-2xl font-semibold text-gray-100">
+        Welcome to Your Notes
       </h2>
 
-      <p className="text-gray-400 mb-6 max-w-sm">
-        Create your first note to get started with organizing your thoughts.
+      <p className="text-gray-400 max-w-md">
+        You haven't created any notes yet. Click the button below to create your first note and start organizing your thoughts.
       </p>
 
       <button
         onClick={onNewNote}
-        className="flex items-center gap-2 px-4 py-2 bg-violet-600
-                 hover:bg-violet-700 rounded-lg transition-colors duration-200"
+        className="flex items-center gap-2 px-6 py-3 bg-violet-600/90 hover:bg-violet-600 text-white font-medium rounded-md transition-colors duration-200"
       >
         <FiPlus className="w-5 h-5" />
-        Create New Note
+        Create Your First Note
       </button>
     </motion.div>
   );

@@ -1,7 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useAuth } from './AuthContext';
-import { notesService } from '@/services/notesService';
-import { foldersService } from '@/services/foldersService';
 import { toast } from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
 
@@ -12,7 +10,7 @@ export function NotesProvider({ children }) {
   const [notes, setNotes] = useState([]);
   const [activeFolder, setActiveFolder] = useState(null);
   const [activeView, setActiveView] = useState('all');
-  const { user } = useAuth();
+  const { user, reauthenticateUser } = useAuth();
 
   // Add handleFolderClick function
   const handleFolderClick = (folderId) => {
@@ -21,7 +19,7 @@ export function NotesProvider({ children }) {
   };
 
   // Add clearActiveFolder function
-  const clearActiveFolder = () => {``
+  const clearActiveFolder = () => {
     setActiveFolder(null);
     setActiveView('all');
   };
@@ -127,31 +125,29 @@ export function NotesProvider({ children }) {
     if (!user) return;
 
     try {
-      // Ensure folder_id is properly passed through
-      const newNoteData = {
+      const newNote = {
         user_id: user.id,
         title: noteData.title || 'Untitled',
         content: noteData.content || '',
-        folder_id: noteData.folder_id || null, // Make sure this is passed through
+        folder_id: noteData.folder_id || null,
         is_favorite: false,
+        is_archived: false,
         is_deleted: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
 
-      console.log('Creating note with data:', newNoteData); // Debug log
-
-      const { data: newNote, error } = await supabase
+      const { data, error } = await supabase
         .from('notes')
-        .insert([newNoteData])
+        .insert([newNote])
         .select()
         .single();
 
       if (error) throw error;
 
-      setNotes(prev => [newNote, ...prev]);
-      toast.success('Note created');
-      return newNote;
+      setNotes(prev => [data, ...prev]);
+      toast.success('Note created successfully');
+      return data;
     } catch (error) {
       console.error('Error creating note:', error);
       toast.error('Failed to create note');
@@ -165,7 +161,7 @@ export function NotesProvider({ children }) {
     try {
       const { data: updatedNote, error } = await supabase
         .from('notes')
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update(updates)
         .eq('id', noteId)
         .select()
         .single();
@@ -175,6 +171,7 @@ export function NotesProvider({ children }) {
       setNotes(prev => prev.map(note =>
         note.id === noteId ? updatedNote : note
       ));
+
       return updatedNote;
     } catch (error) {
       console.error('Error updating note:', error);
@@ -220,14 +217,18 @@ export function NotesProvider({ children }) {
         .delete()
         .eq('id', noteId);
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('Invalid Refresh Token')) {
+          await reauthenticateUser();
+        }
+        throw error;
+      }
 
       setNotes(prev => prev.filter(note => note.id !== noteId));
-      toast.success('Note permanently deleted');
+      toast.success('Note deleted permanently');
     } catch (error) {
-      console.error('Error deleting note:', error);
+      console.error('Error deleting note permanently:', error);
       toast.error('Failed to delete note');
-      throw error;
     }
   };
 
@@ -329,24 +330,67 @@ export function NotesProvider({ children }) {
     }
   };
 
+  const handleNoteAction = async (noteId, action, value) => {
+    try {
+      let updates = {};
+
+      switch (action) {
+        case 'toggleFavorite':
+          const note = notes.find(n => n.id === noteId);
+          updates = { is_favorite: !note.is_favorite };
+          break;
+        case 'toggleArchive':
+          const archiveNote = notes.find(n => n.id === noteId);
+          updates = {
+            is_archived: !archiveNote.is_archived,
+            folder_id: null
+          };
+          break;
+        case 'moveToFolder':
+          updates = {
+            folder_id: value || null,
+            is_archived: false,
+            is_deleted: false
+          };
+          break;
+        case 'moveToTrash':
+          updates = {
+            is_deleted: true,
+            folder_id: null
+          };
+          break;
+      }
+
+      const { data: updatedNote, error } = await supabase
+        .from('notes')
+        .update(updates)
+        .eq('id', noteId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setNotes(prev => prev.map(note =>
+        note.id === noteId ? updatedNote : note
+      ));
+
+      toast.success('Note updated successfully');
+    } catch (error) {
+      console.error('Error updating note:', error);
+      toast.error('Failed to update note');
+    }
+  };
+
+  useEffect(() => {
+    console.log('Current notes state:', notes);
+  }, [notes]);
+
   const value = {
-    folders,
     notes,
-    activeFolder,
-    activeView,
-    setActiveView,
-    handleFolderClick,
-    createFolder,
-    deleteFolder,
-    clearActiveFolder,
+    folders,
     createNote,
-    updateNote,
-    deleteNotePermanently,
-    moveToTrash,
-    restoreFromTrash,
-    getFilteredNotes,
-    archiveNote,
-    unarchiveNote,
+    handleNoteAction,
+    // ... other context values
   };
 
   return (
@@ -356,10 +400,4 @@ export function NotesProvider({ children }) {
   );
 }
 
-export function useNotes() {
-  const context = useContext(NotesContext);
-  if (context === undefined) {
-    throw new Error('useNotes must be used within a NotesProvider');
-  }
-  return context;
-}
+export const useNotes = () => useContext(NotesContext);

@@ -5,20 +5,56 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Validate environment variables
 if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase environment variables:', {
+    url: !!supabaseUrl,
+    key: !!supabaseAnonKey
+  });
   throw new Error('Missing Supabase environment variables');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create Supabase client with additional options
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  }
+});
 
 // Helper function to check connection
 export const checkSupabaseConnection = async () => {
   try {
-    const { data, error } = await supabase.from('your_table').select('*').limit(1);
-    return !error;
+    const { data, error } = await supabase
+      .from('notes')  // Replace with a table you know exists
+      .select('count')
+      .limit(1)
+      .single();
+
+    if (error) {
+      console.error('Supabase connection test error:', error);
+      return false;
+    }
+
+    return true;
   } catch (error) {
     console.error('Supabase connection error:', error);
     return false;
   }
+};
+
+// Utility to handle connection errors
+export const handleConnectionError = async () => {
+  const isConnected = await checkSupabaseConnection();
+  if (!isConnected) {
+    console.error('Supabase connection lost. Attempting to reconnect...');
+    // Implement reconnection logic if needed
+  }
+  return isConnected;
 };
 
 // Utility to check if we're online

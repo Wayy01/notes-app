@@ -638,3 +638,25 @@ html, body {
 #root {
   height: 100%;
 }
+
+/* Custom toast styles */
+.toast-custom {
+  @apply backdrop-blur-md shadow-xl;
+}
+
+.toast-custom[data-type="success"] {
+  @apply border-green-500/20 bg-green-500/5;
+}
+
+.toast-custom[data-type="error"] {
+  @apply border-red-500/20 bg-red-500/5;
+}
+
+.toast-custom[data-type="loading"] {
+  @apply border-violet-500/20 bg-violet-500/5;
+}
+
+/* Toast description text */
+.toast-custom [data-description] {
+  @apply text-gray-400 text-sm;
+}

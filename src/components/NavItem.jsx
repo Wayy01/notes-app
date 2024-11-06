@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const NavItem = ({ icon, label, count, active, onClick }) => {
+const NavItem = ({ icon, label, count, badge, active, onClick }) => {
   return (
     <motion.div
       onClick={onClick}
@@ -15,6 +15,12 @@ const NavItem = ({ icon, label, count, active, onClick }) => {
       <div className="flex items-center gap-3">
         {icon}
         <span className="text-sm font-medium">{label}</span>
+        {badge && (
+          <span className="px-1.5 py-0.5 text-xs bg-violet-500/20
+                        text-violet-400 rounded-full">
+            {badge}
+          </span>
+        )}
       </div>
 
       {typeof count === 'number' && (

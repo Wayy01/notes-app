@@ -3,16 +3,17 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { FiMail, FiLock, FiArrowRight } from 'react-icons/fi';
+import { FiMail, FiLock, FiArrowRight, FiUser } from 'react-icons/fi';
 import { Logo } from '@/components/Logo';
 import { AnimatedBackground } from '@/components/AnimatedBackground';
+import { supabase } from '@/lib/supabase';
 
 function LoginPage() {
   const navigate = useNavigate();
   const { signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    email: '',
+    emailOrUsername: '',
     password: '',
   });
 
@@ -29,12 +30,52 @@ function LoginPage() {
     setIsLoading(true);
 
     try {
-      await signIn(formData.email, formData.password);
+      const isEmail = formData.emailOrUsername.includes('@');
+      let email = formData.emailOrUsername;
+
+      if (!isEmail) {
+        const { data: userData, error: userError } = await supabase
+          .rpc('get_user_by_display_name', {
+            display_name: formData.emailOrUsername.trim()
+          });
+
+        if (userError) {
+          console.error('Display name lookup error:', userError);
+          throw new Error('Failed to lookup display name');
+        }
+
+        if (!userData || userData.length === 0) {
+          throw new Error('Username not found');
+        }
+
+        email = userData[0].email;
+      }
+
+      const { error: signInError } = await signIn({
+        email: email.toLowerCase().trim(),
+        password: formData.password
+      });
+
+      if (signInError) {
+        if (signInError.message === 'Invalid login credentials') {
+          throw new Error(isEmail ? 'Invalid email or password' : 'Invalid username or password');
+        }
+        throw signInError;
+      }
+
       toast.success('Welcome back!');
       navigate('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
-      toast.error(error.message || 'Failed to sign in');
+      toast.error(
+        error.message === 'Username not found'
+          ? 'Username not found. Please check your spelling and try again.'
+          : error.message === 'Invalid login credentials'
+          ? 'Invalid password'
+          : error.message === 'Failed to lookup display name'
+          ? 'Unable to verify username. Please try again.'
+          : 'Failed to sign in'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -93,27 +134,27 @@ function LoginPage() {
                      duration-300 shadow-xl shadow-black/20"
           >
             <div className="space-y-5">
-              {/* Email Field */}
+              {/* Email or Username Field */}
               <div className="group">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                  Email
+                <label htmlFor="emailOrUsername" className="block text-sm font-medium text-gray-300 mb-2">
+                  Email or Username
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FiMail className="h-5 w-5 text-gray-400 group-hover:text-violet-400 transition-colors" />
+                    <FiUser className="h-5 w-5 text-gray-400 group-hover:text-violet-400 transition-colors" />
                   </div>
                   <input
-                    id="email"
-                    name="email"
-                    type="email"
+                    id="emailOrUsername"
+                    name="emailOrUsername"
+                    type="text"
                     required
-                    value={formData.email}
+                    value={formData.emailOrUsername}
                     onChange={handleChange}
                     className="block w-full pl-10 pr-3 py-3 bg-white/5 border border-white/10
                              rounded-lg text-white focus:ring-2 focus:ring-violet-500
                              focus:border-transparent transition-all duration-200
                              hover:border-violet-500/50 hover:bg-white/[0.07]"
-                    placeholder="Enter your email"
+                    placeholder="Enter your email or username"
                   />
                 </div>
               </div>

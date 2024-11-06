@@ -26,7 +26,7 @@ import {
   FiX,
   FiMenu
 } from 'react-icons/fi';
-import { ParticleBackground } from '../components/ParticleBackground';
+import { ParticleBackground as AnimatedBackground } from '../components/ParticleBackground';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { Menu, Transition } from '@headlessui/react';
@@ -34,6 +34,7 @@ import { useScrollAnimation } from '../hooks/useScrollAnimation';
 import { Logo } from '../components/Logo';
 import defaultAvatar from '../assets/default-avatar.jpeg'; // Make sure to add this image to your assets
 import UserMenu from '@/components/UserMenu';
+import Navigation from '@/components/Navigation';
 
 function LandingPage() {
   const { user, logout } = useAuth();
@@ -906,50 +907,122 @@ function LandingPage() {
     </footer>
   );
 
-  return (
-    <div className="landing-page">
-      {/* Animated background elements */}
-      <div className="fixed inset-0 pointer-events-none">
-        {/* Subtle grid */}
-        <div className="absolute inset-0 bg-grid-white/[0.02]" />
+  // Add this after the featuresSection constant and before the faqSection
+  const betaSection = (
+    <section className="relative py-20">
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-b from-violet-500/5 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_50%,black,transparent)]" />
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.2, 0.3],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 rounded-full blur-3xl"
+        />
+      </div>
 
-        {/* Floating particles */}
-        <div className="absolute inset-0">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute h-px w-px bg-white/10 rounded-full"
-              style={{
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                animation: `float ${3 + Math.random() * 4}s linear infinite`,
-                opacity: Math.random() * 0.3
-              }}
-            />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <span className="px-4 py-1 bg-gradient-to-r from-violet-600/20 to-fuchsia-600/20 rounded-full text-sm font-medium text-violet-400 inline-block mb-4">
+            BETA ACCESS
+          </span>
+          <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
+            Join Our Beta Program
+          </h2>
+          <p className="text-lg text-white/60 max-w-2xl mx-auto">
+            Be among the first to experience our innovative note-taking platform and help shape its future.
+          </p>
+        </motion.div>
+
+        <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          {[
+            {
+              title: "Early Access",
+              description: "Get exclusive access to new features before they're publicly released.",
+              icon: FiStar
+            },
+            {
+              title: "Direct Feedback",
+              description: "Your feedback directly influences the development of new features.",
+              icon: FiMessageCircle
+            },
+            {
+              title: "Special Perks",
+              description: "Receive special benefits and discounts as a beta tester.",
+              icon: FiAward
+            }
+          ].map((feature, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.2 }}
+              className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm"
+            >
+              <feature.icon className="w-8 h-8 text-violet-400 mb-4" />
+              <h3 className="text-xl font-semibold mb-2 text-white">{feature.title}</h3>
+              <p className="text-white/60">{feature.description}</p>
+            </motion.div>
           ))}
         </div>
 
-        {/* Very subtle gradient orbs */}
-        <div className="absolute top-0 -left-40 w-96 h-96 bg-violet-900/[0.02] rounded-full blur-3xl" />
-        <div className="absolute bottom-0 -right-40 w-96 h-96 bg-indigo-900/[0.02] rounded-full blur-3xl" />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mt-12"
+        >
+          <Link
+            to="/signup"
+            className="inline-flex items-center px-6 py-3 rounded-lg bg-violet-600 hover:bg-violet-500 text-white font-medium transition-colors duration-200"
+          >
+            Join Beta Program
+            <FiArrowRight className="ml-2" />
+          </Link>
+        </motion.div>
       </div>
+    </section>
+  );
 
-      {/* Navigation */}
-      {navigation}
+  return (
+    <div className="min-h-screen bg-[#0A0A0F] relative overflow-hidden">
+      <AnimatedBackground />
 
-      {/* Main Content */}
-      <main className="relative pt-16"> {/* Added padding-top to account for fixed nav */}
-        {heroSection}
-        <section id="features" className="scroll-mt-20"> {/* Added scroll margin */}
-          {featuresSection}
-        </section>
-        <section id="support" className="scroll-mt-20">
-          {supportSection}
-        </section>
-        <section id="faq" className="scroll-mt-20">
-          {faqSection}
-        </section>
-      </main>
+      <Navigation
+        landingPage
+        scrollToSection={scrollToSection}
+        sections={[
+          { name: 'Features', id: 'features' },
+          { name: 'Support', id: 'support' },
+          { name: 'FAQ', id: 'faq' }
+        ]}
+      />
+
+      {/* Hero Section */}
+      {heroSection}
+
+      {/* Features Section */}
+      {featuresSection}
+
+      {/* Beta Section */}
+      {betaSection}
+
+      {/* FAQ Section */}
+      {faqSection}
+
+      {/* Footer */}
       {footer}
     </div>
   );

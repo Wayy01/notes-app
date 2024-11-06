@@ -31,40 +31,55 @@ function SignupPage() {
 
     try {
       if (formData.password !== formData.confirmPassword) {
-        toast.error('Passwords do not match');
+        toast.error('Passwords do not match', {
+          description: 'Please ensure both passwords are identical.'
+        });
         return;
       }
 
-      const { data: existingUsers, error: checkError } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('username', formData.username);
-
-      if (checkError) throw checkError;
-
-      if (existingUsers?.length > 0) {
-        toast.error('Username is already taken');
+      if (formData.username.length < 3) {
+        toast.error('Username too short', {
+          description: 'Username must be at least 3 characters long.'
+        });
         return;
       }
 
-      const { error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
+      if (formData.password.length < 6) {
+        toast.error('Password too short', {
+          description: 'Password must be at least 6 characters long.'
+        });
+        return;
+      }
+
+      const cleanUsername = formData.username.trim().replace(/[^a-zA-Z0-9]/g, '');
+
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: formData.email.toLowerCase().trim(),
         password: formData.password,
         options: {
           data: {
-            username: formData.username,
+            full_name: cleanUsername,
+            username: cleanUsername.toLowerCase(),
           },
         },
       });
 
       if (signUpError) throw signUpError;
 
-      toast.success('Sign up successful! Please check your email to verify your account.');
-      navigate('/signup/success');
+      if (data?.user) {
+        toast.success('Sign up successful!', {
+          description: 'Please check your email to verify your account.'
+        });
+        navigate('/signup/success');
+      }
 
     } catch (error) {
       console.error('Sign up error:', error);
-      toast.error(error.message || 'Failed to sign up');
+      toast.error(
+        error.message === 'User already registered'
+          ? 'This email is already registered'
+          : error.message || 'Failed to sign up'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -143,7 +158,7 @@ function SignupPage() {
                              rounded-lg text-white focus:ring-2 focus:ring-violet-500
                              focus:border-transparent transition-all duration-200
                              hover:border-violet-500/50 hover:bg-white/[0.07]"
-                    placeholder="Choose a username"
+                    placeholder="Choose your username"
                   />
                 </div>
               </div>

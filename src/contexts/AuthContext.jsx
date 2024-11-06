@@ -1,78 +1,128 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, checkSupabaseConnection, handleConnectionError } from '@/lib/supabase';
+import { toast } from 'sonner';
 
-const AuthContext = createContext({});
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState(null);
+  const [isConnected, setIsConnected] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    const initializeAuth = async () => {
+      try {
+        // Check connection first
+        const connected = await checkSupabaseConnection();
+        setIsConnected(connected);
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+        if (!connected) {
+          toast.error('Unable to connect to the server', {
+            description: 'Please check your internet connection and try again.',
+            duration: 4000,
+            icon: '🔌'
+          });
+          setLoading(false);
+          return;
+        }
 
-    return () => subscription.unsubscribe();
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user ?? null);
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          (_event, session) => {
+            setUser(session?.user ?? null);
+          }
+        );
+
+        return () => {
+          subscription?.unsubscribe();
+        };
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        toast.error('Error initializing authentication', {
+          description: error.message,
+          duration: 4000,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
   }, []);
 
-  const signIn = async (email, password) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+  // Add connection status check interval
+  useEffect(() => {
+    const checkConnection = async () => {
+      const connected = await checkSupabaseConnection();
+      if (connected !== isConnected) {
+        setIsConnected(connected);
+        if (!connected) {
+          toast.error('Lost connection to server', {
+            description: 'Please check your internet connection and try again.',
+            duration: 4000,
+            icon: '🔌'
+          });
+        } else if (isConnected === false) {
+          toast.success('Connection restored', {
+            description: 'You are back online!',
+            duration: 3000,
+            icon: '👋'
+          });
+        }
+      }
+    };
 
-      if (error) throw error;
-
-      setUser(data.user);
-      setSession(data.session);
-      return data;
-    } catch (error) {
-      console.error('Sign in error:', error.message);
-      throw error;
-    }
-  };
-
-  const signOut = async () => {
-    try {
-      setUser(null);
-      setSession(null);
-      localStorage.clear();
-      sessionStorage.clear();
-
-      await supabase.auth.signOut();
-      return { success: true };
-    } catch (error) {
-      console.warn('Sign out error:', error);
-      return { success: true };
-    }
-  };
+    const interval = setInterval(checkConnection, 30000);
+    return () => clearInterval(interval);
+  }, [isConnected]);
 
   const value = {
     user,
-    session,
     loading,
-    signIn,
-    signOut
+    isConnected,
+    signIn: async (credentials) => {
+      if (!isConnected) {
+        toast.error('No connection to server', {
+          description: 'Please check your internet connection and try again.'
+        });
+        throw new Error('No connection to server');
+      }
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: credentials.email.trim().toLowerCase(),
+          password: credentials.password
+        });
+
+        if (error) throw error;
+        toast.success('Welcome back!', {
+          description: 'Successfully signed in to your account.'
+        });
+        return data;
+      } catch (error) {
+        console.error('Login error:', error);
+        toast.error('Failed to sign in', {
+          description: error.message
+        });
+        throw error;
+      }
+    },
+    signUp: (credentials) => supabase.auth.signUp(credentials),
+    signOut: async () => {
+      try {
+        await supabase.auth.signOut();
+        toast.success('Signed out successfully', {
+          description: 'You have been safely logged out.'
+        });
+      } catch (error) {
+        toast.error('Failed to sign out', {
+          description: error.message
+        });
+      }
+    },
+    resetPassword: (email) => supabase.auth.resetPasswordForEmail(email),
+    updatePassword: (newPassword) => supabase.auth.updateUser({ password: newPassword })
   };
 
   return (
@@ -81,3 +131,13 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export default AuthProvider;

@@ -1,41 +1,55 @@
-import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { FiFolder } from 'react-icons/fi';
+import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { FiPlus, FiFolder } from 'react-icons/fi';
 import { useNotes } from '@/contexts/NotesContext';
 
 const FoldersList = () => {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { folders, notes } = useNotes(); // Add notes from useNotes hook
+  const { folders, createFolder, notes } = useNotes();
+  const [newFolderName, setNewFolderName] = useState('');
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
 
-  const getFolderCount = (folderId) => {
-    return notes.filter(note =>
-      note.folder_id === folderId && !note.is_deleted
-    ).length;
+  const handleAddFolder = () => {
+    const folderName = prompt('Enter folder name');
+    if (folderName && folderName.trim()) {
+      createFolder(folderName.trim());
+    }
   };
 
   return (
-    <div className="space-y-1">
-      {folders.map((folder) => (
+    <div className="p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-medium text-gray-400">Your Folders</h2>
         <button
-          key={folder.id}
-          onClick={() => navigate(`/dashboard/folders/${folder.id}`)}
-          className={`
-            w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm
-            ${location.pathname === `/dashboard/folders/${folder.id}`
-              ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
-              : 'text-white/70 hover:text-white hover:bg-white/5 border border-transparent'
-            }
-            transition-all duration-200
-          `}
+          onClick={handleAddFolder}
+          className="p-1 hover:bg-gray-700 rounded-lg transition-colors duration-200"
         >
-          <div className="flex items-center">
-            <FiFolder className="w-4 h-4 mr-2" />
-            <span className="truncate">{folder.name}</span>
-          </div>
-          <span className="text-xs text-white/50">{getFolderCount(folder.id)}</span>
+          <FiPlus className="w-4 h-4 text-gray-400" />
         </button>
-      ))}
+      </div>
+      <div className="space-y-1">
+        {folders.map(folder => (
+          <Link
+            key={folder.id}
+            to={`/dashboard/folders/${folder.id}`}
+            className={`
+              flex items-center gap-3 px-3 py-2 rounded-lg
+              ${
+                location.pathname === `/dashboard/folders/${folder.id}`
+                  ? 'bg-violet-500/20 text-violet-300'
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }
+              transition-colors duration-200
+            `}
+          >
+            <FiFolder className="w-5 h-5" />
+            {folder.name}
+            <span className="ml-auto text-xs bg-gray-700 rounded-full px-2 py-0.5">
+              {notes.filter(note => note.folder_id === folder.id && !note.is_deleted).length}
+            </span>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 };
