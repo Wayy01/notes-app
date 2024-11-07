@@ -1,11 +1,20 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
     content: [
         "./index.html",
         "./src/**/*.{js,ts,jsx,tsx}",
     ],
     theme: {
-        extend: {},
+        extend: {
+            fontFamily: {
+                'cabinet-grotesk': ['Cabinet Grotesk', 'sans-serif'],
+            },
+            screens: {
+                'mobile': {'max': '767px'},
+                'md': '768px',
+                // ... other breakpoints
+            }
+        }
     },
     plugins: [],
 }

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase, checkSupabaseConnection, handleConnectionError } from '@/lib/supabase';
+import { supabase, checkSupabaseConnection } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 const AuthContext = createContext();
@@ -8,12 +8,16 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(true);
+  const [session, setSession] = useState(null);
 
   useEffect(() => {
+    let mounted = true;
+
     const initializeAuth = async () => {
       try {
         // Check connection first
         const connected = await checkSupabaseConnection();
+        if (!mounted) return;
         setIsConnected(connected);
 
         if (!connected) {
@@ -26,11 +30,15 @@ export const AuthProvider = ({ children }) => {
           return;
         }
 
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user ?? null);
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (!mounted) return;
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           (_event, session) => {
+            if (!mounted) return;
+            setSession(session);
             setUser(session?.user ?? null);
           }
         );
@@ -40,16 +48,22 @@ export const AuthProvider = ({ children }) => {
         };
       } catch (error) {
         console.error('Error initializing auth:', error);
+        if (!mounted) return;
         toast.error('Error initializing authentication', {
           description: error.message,
           duration: 4000,
         });
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     initializeAuth();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Add connection status check interval
@@ -80,6 +94,7 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
+    session,
     loading,
     isConnected,
     signIn: async (credentials) => {
@@ -97,7 +112,8 @@ export const AuthProvider = ({ children }) => {
 
         if (error) throw error;
         toast.success('Welcome back!', {
-          description: 'Successfully signed in to your account.'
+          description: `Welcome back, ${data.user.email}!`,
+          duration: 3000,
         });
         return data;
       } catch (error) {
@@ -108,7 +124,26 @@ export const AuthProvider = ({ children }) => {
         throw error;
       }
     },
-    signUp: (credentials) => supabase.auth.signUp(credentials),
+    signUp: async (credentials) => {
+      if (!isConnected) {
+        toast.error('No connection to server');
+        throw new Error('No connection to server');
+      }
+      try {
+        const { data, error } = await supabase.auth.signUp(credentials);
+        if (error) throw error;
+        toast.success('Account created successfully!', {
+          description: 'Please check your email to verify your account.',
+          duration: 5000,
+        });
+        return data;
+      } catch (error) {
+        toast.error('Failed to create account', {
+          description: error.message
+        });
+        throw error;
+      }
+    },
     signOut: async () => {
       try {
         await supabase.auth.signOut();

@@ -14,7 +14,7 @@ function Navigation({ landingPage, scrollToSection, sections }) {
   const { activeMenu, setActiveMenu } = useMobileMenu();
   const isNavOpen = activeMenu === 'nav';
 
-  // Add this function to check if a path is active
+  // Function to check if a path is active
   const isActive = (path) => {
     if (landingPage && path.startsWith('#')) {
       return false; // Sections don't have an "active" state on landing page
@@ -26,7 +26,7 @@ function Navigation({ landingPage, scrollToSection, sections }) {
     setActiveMenu(isNavOpen ? null : 'nav');
   };
 
-  // Update the mobile menu section to handle both regular links and section scrolling
+  // Handle both regular links and section scrolling
   const handleMobileItemClick = (item) => {
     if (item.isSection) {
       scrollToSection(item.path);

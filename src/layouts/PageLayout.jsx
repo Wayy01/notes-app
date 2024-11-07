@@ -3,6 +3,7 @@ import { Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Navigation from '@/components/Navigation';
 import SignOutDialog from '@/components/SignOutDialog';
+import { Toaster } from 'sonner';
 
 const PageLayout = () => {
   const [showSignOutDialog, setShowSignOutDialog] = useState(false);
@@ -33,6 +34,7 @@ const PageLayout = () => {
           onConfirm={handleSignOut}
         />
       </main>
+      <Toaster position="bottom-right" theme="dark" />
     </div>
   );
 };

@@ -35,6 +35,7 @@ import { Logo } from '../components/Logo';
 import defaultAvatar from '../assets/default-avatar.jpeg'; // Make sure to add this image to your assets
 import UserMenu from '@/components/UserMenu';
 import Navigation from '@/components/Navigation';
+import { Button } from '../components/Button';
 
 function LandingPage() {
   const { user, logout } = useAuth();
@@ -204,29 +205,27 @@ function LandingPage() {
             initial="initial"
             animate="animate"
           >
-            <Link
+            <Button
               to="/signup"
-              className="group relative px-8 py-4 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-xl
-                         overflow-hidden transition-all duration-300 hover:scale-105"
+              variant="primary"
+              className="group hover:scale-105"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-fuchsia-600 opacity-0
-                            group-hover:opacity-100 transition-opacity duration-300 blur-xl" />
-              <span className="relative flex items-center">
+              <span className="flex items-center">
                 Start Your Journey
                 <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
               </span>
-            </Link>
+            </Button>
 
-            <a
+            <Button
               href="#demo"
-              className="group px-8 py-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10
-                         transition-all duration-300 hover:scale-105 hover:border-white/20"
+              variant="secondary"
+              className="group hover:scale-105"
             >
               <span className="flex items-center">
                 Watch Demo
                 <FiPlay className="ml-2 group-hover:translate-x-1 transition-transform" />
               </span>
-            </a>
+            </Button>
           </motion.div>
         </motion.div>
 
@@ -578,22 +577,18 @@ function LandingPage() {
               <UserMenu />
             ) : (
               <>
-                <Link
+                <Button
                   to="/login"
-                  className="px-4 py-2 text-white/70 hover:text-white transition-colors rounded-lg
-                           border border-white/10 hover:border-white/20 bg-white/5"
+                  variant="secondary"
                 >
                   Sign In
-                </Link>
-                <Link
+                </Button>
+                <Button
                   to="/signup"
-                  className="px-4 py-2 bg-gradient-to-r from-violet-600 to-violet-500
-                           hover:from-violet-500 hover:to-violet-400 text-white rounded-lg
-                           transition-all duration-300 shadow-lg shadow-violet-500/25
-                           hover:shadow-violet-500/40 border border-violet-400/20"
+                  variant="primary"
                 >
                   Sign Up
-                </Link>
+                </Button>
               </>
             )}
           </div>
@@ -978,19 +973,15 @@ function LandingPage() {
           ))}
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mt-12"
-        >
-          <Link
+        <motion.div className="text-center mt-12">
+          <Button
             to="/signup"
-            className="inline-flex items-center px-6 py-3 rounded-lg bg-violet-600 hover:bg-violet-500 text-white font-medium transition-colors duration-200"
+            variant="primary"
+            className="inline-flex items-center"
           >
             Join Beta Program
             <FiArrowRight className="ml-2" />
-          </Link>
+          </Button>
         </motion.div>
       </div>
     </section>

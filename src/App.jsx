@@ -5,14 +5,16 @@ import PageLayout from '@/layouts/PageLayout';
 import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/auth/LoginPage';
 import SignupPage from '@/pages/auth/SignupPage';
-import DashboardLayout from '@/layouts/DashboardLayout';
+import PricingPage from '@/pages/pricing/PricingPage';
+import Dashboard from '@/pages/Dashboard';
 import ProfilePage from '@/pages/profile/ProfilePage';
 import SettingsPage from '@/pages/settings/SettingsPage';
-import PricingPage from '@/pages/pricing/PricingPage';
-import NotesGrid from '@/components/NotesGrid';
 import { MobileMenuProvider } from '@/contexts/MobileMenuContext';
 import AuthDebug from '@/components/AuthDebug';
 import { Toaster } from 'sonner';
+import 'react-quill/dist/quill.snow.css';
+import 'highlight.js/styles/monokai-sublime.css';
+import './styles/editor.css';
 
 function App() {
   const { user, loading } = useAuth();
@@ -44,9 +46,19 @@ function App() {
 
         {/* Protected routes */}
         <Route element={<PageLayout />}>
-          <Route path="/dashboard/*" element={user ? <DashboardLayout /> : <Navigate to="/login" />} />
-          <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/login" />} />
-          <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/login" />} />
+          <Route
+            path="/dashboard"
+            element={user ? <Dashboard /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/profile"
+            element={user ? <ProfilePage /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/settings"
+            element={user ? <SettingsPage /> : <Navigate to="/login" />}
+          />
+          {/* You can add more protected routes here in the future */}
         </Route>
 
         {/* Catch all */}

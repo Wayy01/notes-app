@@ -5,23 +5,34 @@
 @layer base {
   :root {
     /* Colors */
-    --bg-primary: #0a0a0f;
-    --bg-secondary: #13131a;
-    --bg-tertiary: #1c1c24;
+    --bg-primary: #0A0A0F;
+    --bg-secondary: #13131A;
+    --bg-tertiary: #1E1E2E;
+    --bg-hover: rgba(30, 30, 46, 0.8);
+    --bg-selected: #1E1E2E;
 
     --accent-primary: #8b5cf6;
     --accent-secondary: #7c3aed;
     --accent-hover: #6d28d9;
 
-    --text-primary: #f8f8f8;
-    --text-secondary: #a1a1aa;
-    --text-tertiary: #71717a;
+    --text-primary: rgba(255, 255, 255, 0.9);
+    --text-secondary: rgba(255, 255, 255, 0.6);
+    --text-tertiary: rgba(255, 255, 255, 0.4);
 
     --border-primary: rgba(255, 255, 255, 0.1);
     --border-secondary: rgba(255, 255, 255, 0.05);
 
     --toaster-bg: #12121A;
     --toaster-border: #2A2A35;
+
+    --bg-sidebar: #0A0A0C;
+    --bg-hover: transparent;
+    --ring-color: rgba(255, 255, 255, 0.1);
+    --ring-hover: rgba(255, 255, 255, 0.06);
+
+    --text-primary: rgba(255, 255, 255, 0.95);
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-tertiary: rgba(255, 255, 255, 0.4);
   }
 
   body {
@@ -659,4 +670,32 @@ html, body {
 /* Toast description text */
 .toast-custom [data-description] {
   @apply text-gray-400 text-sm;
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Update the sidebar background */
+.sidebar {
+  background-color: var(--bg-sidebar);
+  backdrop-filter: blur(20px);
 }

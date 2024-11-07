@@ -57,14 +57,13 @@ function UserMenu() {
     <>
       <Menu as="div" className="relative w-full md:w-auto">
         <Menu.Button
-          className="flex items-center justify-between w-full p-2.5 rounded-lg
-                     bg-white/5 hover:bg-white/10 transition-colors border border-white/10
+          className="flex items-center gap-2 px-3 py-2 rounded-full
+                     bg-[--bg-secondary] hover:bg-[--bg-tertiary]
+                     transition-colors border border-white/10
                      active:scale-95 transform duration-200"
         >
-          <div className="flex items-center gap-3">
-            <UserAvatar size="sm" />
-            <span className="text-sm font-medium text-white/90">{displayName}</span>
-          </div>
+          <UserAvatar size="sm" />
+          <span className="text-sm font-medium text-white/90">{displayName}</span>
           <FiChevronDown className="w-4 h-4 text-white/50" />
         </Menu.Button>
 
@@ -78,19 +77,10 @@ function UserMenu() {
           leaveTo="transform opacity-0 scale-95"
         >
           <Menu.Items
-            className="md:absolute md:right-0 mt-2 w-full md:w-56 rounded-lg
-                       bg-[#141417] border border-white/10 shadow-xl shadow-black/20
-                       focus:outline-none overflow-hidden"
+            className="absolute right-0 mt-2 w-48 origin-top-right
+                            bg-[--bg-secondary] border border-white/10
+                            rounded-lg shadow-lg overflow-hidden"
           >
-            <div className="p-4 border-b border-white/10">
-              <div className="flex items-center gap-3">
-                <UserAvatar size="md" />
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-white/90">{displayName}</span>
-                  <span className="text-xs text-white/50">{user?.email}</span>
-                </div>
-              </div>
-            </div>
             <div className="p-1.5">
               {menuItems.map((item, index) => (
                 <Fragment key={item.label}>
