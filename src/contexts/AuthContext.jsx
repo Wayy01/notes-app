@@ -160,6 +160,15 @@ export const AuthProvider = ({ children }) => {
     updatePassword: (newPassword) => supabase.auth.updateUser({ password: newPassword })
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0A0A0F]">
+        <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent
+                      rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <AuthContext.Provider value={value}>
       {children}
